@@ -1,3 +1,107 @@
+## 21.6.12
+
+- fix ordinal-suffixes for saveMissingWithPlurals [1734](https://github.com/i18next/i18next/pull/1734)
+
+## 21.6.11
+
+- make sure key and additionally optional defaultValue are passed to parseMissingKeyHandler function [1445](https://github.com/i18next/react-i18next/issues/1445)
+
+## 21.6.10
+
+- fix: types for hasLoadedNamespace [1724](https://github.com/i18next/i18next/pull/1724)
+
+## 21.6.9
+
+- fix: respect skipOnVariables option passed in t function also for $t() usage
+
+## 21.6.8
+
+- fix: respect skipOnVariables option passed in t function
+
+## 21.6.7
+
+- fix: consistently lowercase new formatter names internally
+
+## 21.6.6
+
+- fix: deepFind fallback when accessing missing flat dotted key [1719](https://github.com/i18next/i18next/issues/1719)
+
+## 21.6.5
+
+- fix: passed format parameter value truncation in options argument for custom formatter [1715](https://github.com/i18next/i18next/issues/1715)
+
+## 21.6.4
+
+- fix: skipOnVariables (and all other interpolation options should respect defaults) [1711](https://github.com/i18next/i18next/issues/1711)
+
+## 21.6.3
+
+- types: wait option does not exist anymore for react-i18next
+
+## 21.6.2
+
+- remove console.log statement
+
+## 21.6.1
+
+- fix when completely lazy loading namespaces [1709](https://github.com/i18next/i18next/issues/1709)
+
+## 21.6.0
+
+- add \_zero suffix lookup if count === 0 [1705](https://github.com/i18next/i18next/pull/1705)
+
+## 21.5.6
+
+- fix: correct defaults for plural forms (if supplied) [1703](https://github.com/i18next/i18next/issues/1703)
+
+## 21.5.5
+
+- fix: prevent TypeError when using `returnObjects: true` with non string values [1702](https://github.com/i18next/i18next/issues/1702)
+
+## 21.5.4
+
+- include version info in generated package.json of esm dist
+
+## 21.5.3
+
+- do not use options.interpolation reference
+
+## 21.5.2
+
+- missing named exports for TypeScript usage [1692](https://github.com/i18next/i18next/issues/1692)
+
+## 21.5.1
+
+- add package.json to exports subpath
+
+## 21.5.0
+
+- named exports for esm usage [1681](https://github.com/i18next/i18next/pull/1681)
+
+## 21.4.2
+
+- trim multiple formatters, fixes [1689](https://github.com/i18next/i18next/issues/1689)
+
+## 21.4.1
+
+- rtl fix for -arab language codes
+
+## 21.4.0
+
+- bind all i18next functions to this, this way you can for example just use t() instead of i18n.t() [1682](https://github.com/i18next/i18next/issues/1682)
+
+## 21.3.3
+
+- apply default interpolation formatter when interpolation options don't specify one [1680](https://github.com/i18next/i18next/issues/1680)
+
+## 21.3.2
+
+- formatter typescript declarations [1679](https://github.com/i18next/i18next/pull/1679)
+
+## 21.3.1
+
+- get rid of internal isDummy check to prevent react-native issue [1675](https://github.com/i18next/i18next/issues/1675)
+
 ## 21.3.0
 
 - adds support for formats provided by Intl API (number, currency, datetime, relativedate, list)

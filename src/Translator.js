@@ -55,7 +55,7 @@ class Translator extends EventEmitter {
     const keySeparator =
       options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
 
-    let namespaces = options.ns || this.options.defaultNS;
+    let namespaces = options.ns || this.options.defaultNS || [];
     const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1;
     const seemsNaturalLanguage =
       !this.options.userDefinedKeySeparator &&
@@ -237,13 +237,15 @@ class Translator extends EventEmitter {
           lngs.push(options.lng || this.language);
         }
 
-        const send = (l, k, fallbackValue) => {
+        const send = (l, k, specificDefaultValue) => {
+          const defaultForMissing =
+            hasDefaultValue && specificDefaultValue !== res ? specificDefaultValue : resForMissing;
           if (this.options.missingKeyHandler) {
             this.options.missingKeyHandler(
               l,
               namespace,
               k,
-              updateMissing ? fallbackValue : resForMissing,
+              defaultForMissing,
               updateMissing,
               options,
             );
@@ -252,7 +254,7 @@ class Translator extends EventEmitter {
               l,
               namespace,
               k,
-              updateMissing ? fallbackValue : resForMissing,
+              defaultForMissing,
               updateMissing,
               options,
             );
@@ -263,7 +265,7 @@ class Translator extends EventEmitter {
         if (this.options.saveMissing) {
           if (this.options.saveMissingPlurals && needsPluralHandling) {
             lngs.forEach((language) => {
-              this.pluralResolver.getSuffixes(language).forEach((suffix) => {
+              this.pluralResolver.getSuffixes(language, options).forEach((suffix) => {
                 send([language], key + suffix, options[`defaultValue${suffix}`] || defaultValue);
               });
             });
@@ -281,8 +283,13 @@ class Translator extends EventEmitter {
         res = `${namespace}:${key}`;
 
       // parseMissingKeyHandler
-      if ((usedKey || usedDefault) && this.options.parseMissingKeyHandler)
-        res = this.options.parseMissingKeyHandler(res);
+      if ((usedKey || usedDefault) && this.options.parseMissingKeyHandler) {
+        if (this.options.compatibilityAPI !== 'v1') {
+          res = this.options.parseMissingKeyHandler(key, usedDefault ? res : undefined);
+        } else {
+          res = this.options.parseMissingKeyHandler(res);
+        }
+      }
     }
 
     // return
@@ -307,8 +314,10 @@ class Translator extends EventEmitter {
           ...{ interpolation: { ...this.options.interpolation, ...options.interpolation } },
         });
       const skipOnVariables =
-        (options.interpolation && options.interpolation.skipOnVariables) ||
-        this.options.interpolation.skipOnVariables;
+        typeof res === 'string' &&
+        (options && options.interpolation && options.interpolation.skipOnVariables !== undefined
+          ? options.interpolation.skipOnVariables
+          : this.options.interpolation.skipOnVariables);
       let nestBef;
       if (skipOnVariables) {
         const nb = res.match(this.interpolator.nestingRegexp);
@@ -391,6 +400,11 @@ class Translator extends EventEmitter {
       if (this.options.fallbackNS) namespaces = namespaces.concat(this.options.fallbackNS);
 
       const needsPluralHandling = options.count !== undefined && typeof options.count !== 'string';
+      const needsZeroSuffixLookup =
+        needsPluralHandling &&
+        !options.ordinal &&
+        options.count === 0 &&
+        this.pluralResolver.shouldUseIntlApi();
       const needsContextHandling =
         options.context !== undefined &&
         (typeof options.context === 'string' || typeof options.context === 'number') &&
@@ -423,8 +437,7 @@ class Translator extends EventEmitter {
           if (this.isValidLookup(found)) return;
           usedLng = code;
 
-          let finalKey = key;
-          const finalKeys = [finalKey];
+          const finalKeys = [key];
 
           if (this.i18nFormat && this.i18nFormat.addLookupKeys) {
             this.i18nFormat.addLookupKeys(finalKeys, key, code, ns, options);
@@ -432,17 +445,29 @@ class Translator extends EventEmitter {
             let pluralSuffix;
             if (needsPluralHandling)
               pluralSuffix = this.pluralResolver.getSuffix(code, options.count, options);
-
-            // fallback for plural if context not found
-            if (needsPluralHandling && needsContextHandling)
-              finalKeys.push(finalKey + pluralSuffix);
-
-            // get key for context if needed
-            if (needsContextHandling)
-              finalKeys.push((finalKey += `${this.options.contextSeparator}${options.context}`));
+            const zeroSuffix = '_zero';
 
             // get key for plural if needed
-            if (needsPluralHandling) finalKeys.push((finalKey += pluralSuffix));
+            if (needsPluralHandling) {
+              finalKeys.push(key + pluralSuffix);
+              if (needsZeroSuffixLookup) {
+                finalKeys.push(key + zeroSuffix);
+              }
+            }
+
+            // get key for context if needed
+            if (needsContextHandling) {
+              const contextKey = `${key}${this.options.contextSeparator}${options.context}`;
+              finalKeys.push(contextKey);
+
+              // get key for context + plural if needed
+              if (needsPluralHandling) {
+                finalKeys.push(contextKey + pluralSuffix);
+                if (needsZeroSuffixLookup) {
+                  finalKeys.push(contextKey + zeroSuffix);
+                }
+              }
+            }
           }
 
           // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only

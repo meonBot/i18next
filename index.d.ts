@@ -126,11 +126,6 @@ export interface InterpolationOptions {
 
 export interface ReactOptions {
   /**
-   * Set to true if you like to wait for loaded in every translated hoc
-   * @default false
-   */
-  wait?: boolean;
-  /**
    * Set it to fallback to let passed namespaces to translated hoc act as fallbacks
    * @default 'default'
    */
@@ -351,7 +346,7 @@ export interface InitOptions extends MergeBy<DefaultPluginOptions, PluginOptions
    * Receives a key that was not found in `t()` and returns a value, that will be returned by `t()`
    * @default noop
    */
-  parseMissingKeyHandler?(key: string): any;
+  parseMissingKeyHandler?(key: string, defaultValue?: string): any;
 
   /**
    * Appends namespace to missing key
@@ -750,6 +745,12 @@ export class ResourceStore {
   off(event: 'added' | 'removed', callback?: (lng: string, ns: string) => void): void;
 }
 
+export interface Formatter {
+  init(services: Services, i18nextOptions: InitOptions): void;
+  add(name: string, fc: (value: any, lng: string | undefined, options: any) => string): void;
+  format: FormatFunction;
+}
+
 export interface Services {
   backendConnector: any;
   i18nFormat: any;
@@ -759,6 +760,7 @@ export interface Services {
   logger: any;
   pluralResolver: any;
   resourceStore: ResourceStore;
+  formatter?: Formatter;
 }
 
 export type ModuleType =
@@ -767,6 +769,7 @@ export type ModuleType =
   | 'languageDetector'
   | 'postProcessor'
   | 'i18nFormat'
+  | 'formatter'
   | '3rdParty';
 
 export interface Module {
@@ -860,6 +863,10 @@ export interface I18nFormatModule extends Module {
   type: 'i18nFormat';
 }
 
+export interface FormatterModule extends Module, Formatter {
+  type: 'formatter';
+}
+
 export interface ThirdPartyModule extends Module {
   type: '3rdParty';
   init(i18next: i18n): void;
@@ -870,6 +877,7 @@ export interface Modules {
   logger?: LoggerModule;
   languageDetector?: LanguageDetectorModule | LanguageDetectorAsyncModule;
   i18nFormat?: I18nFormatModule;
+  formatter?: FormatterModule;
   external: ThirdPartyModule[];
 }
 
@@ -992,6 +1000,11 @@ export interface i18n {
    * Changes the default namespace.
    */
   setDefaultNamespace(ns: string): void;
+
+  /**
+   * Checks if a namespace has been loaded.
+   */
+  hasLoadedNamespace(ns: string, options?: Pick<InitOptions, 'fallbackLng'>): boolean;
 
   /**
    * Returns rtl or ltr depending on languages read direction.
@@ -1133,3 +1146,18 @@ export interface i18n {
 
 declare const i18next: i18n;
 export default i18next;
+
+export const createInstance: i18n['createInstance'];
+
+export const init: i18n['init'];
+export const loadResources: i18n['loadResources'];
+export const reloadResources: i18n['reloadResources'];
+export const use: i18n['use'];
+export const changeLanguage: i18n['changeLanguage'];
+export const getFixedT: i18n['getFixedT'];
+export const t: i18n['t'];
+export const exists: i18n['exists'];
+export const setDefaultNamespace: i18n['setDefaultNamespace'];
+export const hasLoadedNamespace: i18n['hasLoadedNamespace'];
+export const loadNamespaces: i18n['loadNamespaces'];
+export const loadLanguages: i18n['loadLanguages'];

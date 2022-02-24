@@ -13,6 +13,17 @@ import { defer, isIE10 } from './utils.js';
 
 function noop() { }
 
+// Binds the member functions of the given class instance so that they can be
+// destructured or used as callbacks.
+function bindMemberFunctions(inst) {
+  const mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst))
+  mems.forEach((mem) => {
+    if (typeof inst[mem] === 'function') {
+      inst[mem] = inst[mem].bind(inst)
+    }
+  })
+}
+
 class I18n extends EventEmitter {
   constructor(options = {}, callback) {
     super();
@@ -24,6 +35,8 @@ class I18n extends EventEmitter {
     this.services = {};
     this.logger = baseLogger;
     this.modules = { external: [] };
+
+    bindMemberFunctions(this);
 
     if (callback && !this.isInitialized && !options.isClone) {
       // https://github.com/i18next/i18next/issues/879
@@ -51,7 +64,11 @@ class I18n extends EventEmitter {
       }
     }
 
-    this.options = { ...getDefaults(), ...this.options, ...transformOptions(options) };
+    const defOpts = getDefaults();
+    this.options = { ...defOpts, ...this.options, ...transformOptions(options) };
+    if (this.options.compatibilityAPI !== 'v1') {
+      this.options.interpolation = { ...defOpts.interpolation, ...this.options.interpolation }; // do not use reference
+    }
     if (options.keySeparator !== undefined) {
       this.options.userDefinedKeySeparator = options.keySeparator;
     }
@@ -94,7 +111,7 @@ class I18n extends EventEmitter {
         simplifyPluralSuffix: this.options.simplifyPluralSuffix,
       });
 
-      if (formatter && this.options.interpolation.format && this.options.interpolation.format.isDummy) {
+      if (formatter && (!this.options.interpolation.format || this.options.interpolation.format === defOpts.interpolation.format)) {
         s.formatter = createClassOnDemand(formatter);
         s.formatter.init(s, this.options);
 
@@ -540,15 +557,12 @@ class I18n extends EventEmitter {
       'ckb'
     ];
 
-    return rtlLngs.indexOf(this.services.languageUtils.getLanguagePartFromCode(lng)) >= 0
+    return rtlLngs.indexOf(this.services.languageUtils.getLanguagePartFromCode(lng)) > -1 || lng.toLowerCase().indexOf('-arab') > 1
       ? 'rtl'
       : 'ltr';
   }
 
-  /* eslint class-methods-use-this: 0 */
-  createInstance(options = {}, callback) {
-    return new I18n(options, callback);
-  }
+  static createInstance = (options = {}, callback) => new I18n(options, callback)
 
   cloneInstance(options = {}, callback = noop) {
     const mergedOptions = { ...this.options, ...options, ...{ isClone: true } };
@@ -585,4 +599,7 @@ class I18n extends EventEmitter {
   }
 }
 
-export default new I18n();
+const instance = I18n.createInstance();
+instance.createInstance = I18n.createInstance;
+
+export default instance;

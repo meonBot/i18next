@@ -18,6 +18,8 @@ describe('i18next.translation.formatting', () => {
                 'The following text is uppercased, underscored, then uri component encoded: $t(key7, uppercase, underscore, encodeuricomponent)',
               oneFormatterUsingAnotherFormatterTest:
                 'The following text is lowercased: $t(twoFormattersTogetherTest, lowercase)',
+              twoFormattersTogetherInterpolationTest:
+                'pre format {{value, uppercase, underscore}} after format',
               oneFormatterUsingCurrencyTest: 'The following text is an amount: $t(key8, currency)',
               missingTranslationTest:
                 'No text will be shown when the translation key is missing: $t(, uppercase)',
@@ -39,6 +41,8 @@ describe('i18next.translation.formatting', () => {
               intlRelativeTimeWithOptionsExplicit:
                 'Lorem {{val, relativetime(range: quarter; style: narrow;)}}',
               intlList: 'A list of {{val, list}}',
+              keyCustomFormatWithColon:
+                'Before {{date, customDate(format: EEEE d MMMM yyyy HH:mm; otherParam: 0)}}',
             },
           },
         },
@@ -56,6 +60,9 @@ describe('i18next.translation.formatting', () => {
         });
         instance.services.formatter.add('encodeuricomponent', (value, lng, options) => {
           return encodeURIComponent(value);
+        });
+        instance.services.formatter.add('customDate', (value, lng, options) => {
+          return `customized date in format ${options.format} (and other param ${options.otherParam})`;
         });
         done();
       },
@@ -87,6 +94,10 @@ describe('i18next.translation.formatting', () => {
         args: ['oneFormatterUsingAnotherFormatterTest'],
         expected:
           'The following text is lowercased: the following text is uppercased, underscored, then uri component encoded: here_is_some%3a_text%3f_with%2c_(punctuation)',
+      },
+      {
+        args: ['twoFormattersTogetherInterpolationTest', { value: 'my interpolated value' }],
+        expected: 'pre format MY_INTERPOLATED_VALUE after format',
       },
       {
         args: ['missingTranslationTest'],
@@ -143,11 +154,11 @@ describe('i18next.translation.formatting', () => {
             altValue: 16543.21,
             formatParams: {
               localValue: { currency: 'USD', locale: 'en-US' },
-              altValue: { currency: 'CAD', locale: 'fr-CA' },
+              altValue: { currency: 'DKK', locale: 'da' },
             },
           },
         ],
-        expected: 'The value is $12,345.67 or 16 543,21 $ CA',
+        expected: 'The value is $12,345.67 or 16.543,21 kr.',
       },
     ]);
 
@@ -200,6 +211,14 @@ describe('i18next.translation.formatting', () => {
       {
         args: ['intlList', { val: ['locize', 'i18next', 'awesome'] }],
         expected: 'A list of locize, i18next, and awesome',
+      },
+    ]);
+
+    // custom
+    tests = tests.concat([
+      {
+        args: ['keyCustomFormatWithColon', { date: new Date(Date.UTC(2022, 0, 4, 14, 33, 10)) }],
+        expected: 'Before customized date in format EEEE d MMMM yyyy HH:mm (and other param 0)',
       },
     ]);
 

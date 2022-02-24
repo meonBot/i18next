@@ -1,11 +1,11 @@
 import baseLogger from './logger.js';
 
 function parseFormatStr(formatStr) {
-  let formatName = formatStr.toLowerCase();
+  let formatName = formatStr.toLowerCase().trim();
   let formatOptions = {};
   if (formatStr.indexOf('(') > -1) {
     const p = formatStr.split('(');
-    formatName = p[0].toLowerCase();
+    formatName = p[0].toLowerCase().trim();
 
     const optStr = p[1].substring(0, p[1].length - 1);
 
@@ -19,7 +19,8 @@ function parseFormatStr(formatStr) {
 
       opts.forEach((opt) => {
         if (!opt) return;
-        const [key, val] = opt.split(':');
+        const [key, ...rest] = opt.split(':');
+        const val = rest.join(':');
 
         if (val.trim() === 'false') formatOptions[key.trim()] = false;
         if (val.trim() === 'true') formatOptions[key.trim()] = true;
@@ -70,7 +71,7 @@ class Formatter {
   }
 
   add(name, fc) {
-    this.formats[name] = fc;
+    this.formats[name.toLowerCase().trim()] = fc;
   }
 
   format(value, format, lng, options) {
